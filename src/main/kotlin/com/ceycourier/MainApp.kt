@@ -7,29 +7,25 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import com.ceycourier.components.Dashboard
 import com.ceycourier.components.LoginForm
+import com.ceycourier.components.MainLayout
 import com.ceycourier.services.AuthService
 
 @Composable
 fun App() {
-    var currentScreen by remember { mutableStateOf(AppScreens.Login) }
-    var loginError by remember { mutableStateOf("") }
+    var isLoggedIn by remember { mutableStateOf(false) }
 
-    when (currentScreen) {
-        AppScreens.Login -> LoginForm { username, password ->
+    if (isLoggedIn) {
+        MainLayout()
+    } else {
+        LoginForm { username, password ->
             if (AuthService.authenticate(username, password)) {
-                currentScreen = AppScreens.Dashboard
+                isLoggedIn = true
             } else {
-                loginError = "Invalid username or password."
+                // Handle login error
             }
         }
-        AppScreens.Dashboard -> Dashboard()
-    }
-
-    if (currentScreen == AppScreens.Login && loginError.isNotEmpty()) {
-        Text(loginError, color = androidx.compose.ui.graphics.Color.Red)
     }
 }
-
 fun main() = application {
     Window(onCloseRequest = ::exitApplication, title = "CeyCourier") {
         App()

@@ -1,6 +1,8 @@
 package com.ceycourier
 
 enum class AppScreens {
-    Login,
-    Dashboard
+    Dashboard,
+    Orders,
+    Drivers,
+    Customers
 }
