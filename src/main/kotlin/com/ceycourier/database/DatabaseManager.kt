@@ -21,6 +21,20 @@ object DatabaseManager {
                     );
                     """
                 )
+
+                stmt.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS drivers (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT NOT NULL,
+                        email TEXT NOT NULL,
+                        phone TEXT NOT NULL,
+                        address TEXT NOT NULL,
+                        availability BOOLEAN NOT NULL,
+                        vehicle_type TEXT NOT NULL
+                    );
+                    """.trimIndent()
+                )
             }
         }
     }

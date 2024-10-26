@@ -6,6 +6,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.TextFieldValue
+import com.ceycourier.database.SQLiteDriverDao
 import com.ceycourier.model.Driver
 import com.ceycourier.model.VehicleType
 
@@ -17,6 +18,7 @@ fun EditDriverDialog(driver: Driver, onDismiss: () -> Unit, onSave: (Driver) -> 
     var address by remember { mutableStateOf(driver.address) }
     var availability by remember { mutableStateOf(driver.availability) }
     var vehicleType by remember { mutableStateOf(driver.vehicleType) }
+    val driverDao =  SQLiteDriverDao();
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -42,7 +44,8 @@ fun EditDriverDialog(driver: Driver, onDismiss: () -> Unit, onSave: (Driver) -> 
         },
         confirmButton = {
             Button(onClick = {
-                onSave(driver.copy(name = name, email = email, phone = phone, address = address, availability = availability, vehicleType = vehicleType))
+                driverDao.updateDriver(driver.copy(name = name, email = email, phone = phone, address = address, availability = availability, vehicleType = vehicleType))
+//                onSave(driver.copy(name = name, email = email, phone = phone, address = address, availability = availability, vehicleType = vehicleType))
                 onDismiss()
             }) {
                 Text("Save")

@@ -43,7 +43,7 @@ fun MainLayout() {
                 when (currentScreen) {
                     AppScreens.Dashboard -> Dashboard()
                     AppScreens.Orders -> Orders()
-                    AppScreens.Drivers -> DriverPage(drivers, onAddDriver = {})
+                    AppScreens.Drivers -> DriverPage()
                     AppScreens.Customers -> Orders()
                 }
             }

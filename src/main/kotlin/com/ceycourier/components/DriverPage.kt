@@ -9,23 +9,41 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.input.TextFieldValue
+import com.ceycourier.database.SQLiteDriverDao
 import com.ceycourier.model.Driver
-import com.ceycourier.model.VehicleType
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
-fun DriverPage(drivers: List<Driver>, onAddDriver: () -> Unit) {
+fun DriverPage() {
     var searchQuery by remember { mutableStateOf(TextFieldValue("")) }
     var selectedDriver by remember { mutableStateOf<Driver?>(null) }
     var showEditDialog by remember { mutableStateOf(false) }
     var showAddDialog by remember { mutableStateOf(false) }
+    var snackbarVisible by remember { mutableStateOf(false) }
+    var drivers by remember { mutableStateOf(listOf<Driver>()) } // State to hold drivers
+    val driverDao = SQLiteDriverDao()
+    val coroutineScope = rememberCoroutineScope()
+
+    // Load drivers from the database
+    LaunchedEffect(Unit) {
+        drivers = driverDao.getAllDrivers() // Fetch drivers from the database
+        println("Drivers loaded: ${drivers.size}") // Log the number of drivers loaded
+    }
 
     // Create a mutable state list to manage driver availability
     val driverList = remember { drivers.toMutableStateList() }
+    LaunchedEffect(drivers) {
+        driverList.clear()
+        driverList.addAll(drivers)
+    }
 
+    // Filter drivers based on search query
     val filteredDrivers = driverList.filter { driver ->
         driver.name.contains(searchQuery.text, ignoreCase = true) ||
                 driver.email.contains(searchQuery.text, ignoreCase = true) ||
-                driver.phone.contains(searchQuery.text, ignoreCase = true)
+                driver.phone.contains(searchQuery.text, ignoreCase = true) ||
+                driver.address.contains(searchQuery.text, ignoreCase = true)
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
@@ -44,9 +62,31 @@ fun DriverPage(drivers: List<Driver>, onAddDriver: () -> Unit) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        if (snackbarVisible) {
+            Snackbar(
+                action = {
+                    Button(onClick = { snackbarVisible = false }) {
+                        Text("Dismiss")
+                    }
+                }
+            ) {
+                Text("Driver added successfully!")
+            }
+
+            LaunchedEffect(snackbarVisible) {
+                if (snackbarVisible) {
+                    delay(3000)
+                    snackbarVisible = false
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         // Driver Table
         LazyColumn {
             items(filteredDrivers) { driver ->
+                println("Displaying driver: ${driver.name}") // Debugging output
                 DriverRow(driver,
                     onEdit = {
                         selectedDriver = driver
@@ -81,17 +121,22 @@ fun DriverPage(drivers: List<Driver>, onAddDriver: () -> Unit) {
         )
     }
 
+    // Show the add dialog if needed
     if (showAddDialog) {
         AddDriverDialog(
             onDismiss = { showAddDialog = false },
-            onAdd = { newDriver ->
-                // Add the new driver to the list
-                driverList.add(newDriver.copy(id = driverList.size + 1)) // Simple ID generation
-                showAddDialog = false
+            onSuccess = {
+                snackbarVisible = true
+                // Reload drivers from the database after adding a new driver
+                coroutineScope.launch {
+                    drivers = driverDao.getAllDrivers() // Fetch updated driver list
+                    println("Drivers reloaded: ${drivers.size}") // Log the number of drivers reloaded
+                }
             }
         )
     }
 }
+
 @Composable
 fun DriverRow(driver: Driver, onEdit: () -> Unit, onAvailabilityChange: (Boolean) -> Unit) {
     Row(modifier = Modifier.fillMaxWidth().padding(8.dp).border(1.dp, MaterialTheme.colors.onSurface)) {
@@ -101,12 +146,16 @@ fun DriverRow(driver: Driver, onEdit: () -> Unit, onAvailabilityChange: (Boolean
         Text(driver.phone, modifier = Modifier.weight(2f).padding(8.dp))
         Text(driver.address, modifier = Modifier.weight(3f).padding(8.dp))
 
+        val driverDao = SQLiteDriverDao()
+
+
         // Availability Checkbox
         var isAvailable by remember { mutableStateOf(driver.availability) }
         Checkbox(
             checked = isAvailable,
             onCheckedChange = {
                 isAvailable = it
+                driverDao.updateDriver(driver.copy(availability = it)) // Update the driver in the database
                 onAvailabilityChange(it) // Notify the change
             },
             modifier = Modifier.padding(8.dp)
